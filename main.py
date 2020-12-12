@@ -37,7 +37,7 @@ Using customStratifiedKfold
 """
 vetor_X_train, vetor_y_train, vetor_X_test, vetor_y_test = customStratifiedKFold(X, y)
 """
-Count: max = 10
+Count: max = 5
 """
 contador, i = 0, 1
 """
@@ -72,20 +72,11 @@ while(contador < len(vetor_X_train)):
                         show=False,
                         feature_names=columns)
 
-        plt.savefig(f'shapeImages/individual_force_plot{i}.pdf')
+        plt.savefig(f'shapeImages/individual_force_plot{i}.pdf',
+                    bbox_inches = 'tight')
         plt.close()
+        
         i = i + 1
-
-    shap.decision_plot(e.expected_value[0], 
-                       shap_values_train[0],
-                       X_train,
-                       link='logit',
-                       show=False,
-                       feature_names=columns)
-
-    plt.savefig(f'shapeImages/decision_plot{contador}.pdf',
-                bbox_inches = 'tight')
-    plt.close()
 
     y_pred = estimator.predict(X_test)
     y_pred_all.append(y_pred)
@@ -108,3 +99,34 @@ y_pred_all = [round(y_pred_value[0]) for y_pred_value in y_pred_all]
 print(metrics.classification_report(y_test_all, y_pred_all))
 
 print(metrics.confusion_matrix(y_test_all, y_pred_all))
+
+estimator = baseline_model(input_value=X.shape[-1])
+estimator.fit(X, y, epochs=1000, batch_size=20)
+
+e = shap.DeepExplainer(estimator, X)
+
+shap_values = e.shap_values(X)
+
+shap.decision_plot(e.expected_value[0], 
+                   shap_values[0],
+                   X_train,
+                   link='logit',
+                   show=False,
+                   feature_names=columns)
+
+plt.savefig(f'shapeImages/decision_plot.pdf',
+            bbox_inches = 'tight')
+plt.close()
+
+for index_X in range(len(X)):
+    # plot the feature attributions
+    shap.decision_plot(e.expected_value[0], 
+                       shap_values[0][index_X,:], 
+                       X[index_X], 
+                       link="logit", 
+                       show=False,
+                       feature_names=columns)
+
+    plt.savefig(f'shapeImages/individual_decision_plot{index_X + 1}.pdf',
+                bbox_inches = 'tight')
+    plt.close()
